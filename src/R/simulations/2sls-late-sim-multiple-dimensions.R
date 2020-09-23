@@ -24,11 +24,17 @@ model <- stan_model("src/stan/full-causal-model.stan")
 set.seed(100)
 n = 1000
 k = 4
-ngroups = 10
+ngroups = 3
+
+
 
 # construct random covariance matrix
-z = abs(rnorm(k, 0, 2))
-s = tcrossprod(z)
+s = tcrossprod(rnorm(k))
+diag(s) = exp(rnorm(k))
+
+
+
+
 
 # simulate covariates
 X = MASS::mvrnorm(n = n, Sigma = s,
@@ -76,7 +82,7 @@ standata <- format_data(
 # 5k iterations is probably overdoing it, but
 # better to have good fidelity
 fit <- sampling(model, data = standata,
-                iter = 5000,
+                iter = 2000,
                 control = list(max_treedepth = 15))
 
 # stan file already constructs pre-computed treatment effect tau
