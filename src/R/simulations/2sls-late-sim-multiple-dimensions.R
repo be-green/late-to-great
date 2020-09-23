@@ -1,7 +1,8 @@
 library(data.table)
 library(magrittr)
 library(rstan)
-library(data.table)
+library(estimatr)
+library(ggplot2)
 
 # load helpers that construct lattice
 # for treatment effect estimate
@@ -22,8 +23,8 @@ model <- stan_model("src/stan/full-causal-model.stan")
 # ngroups = number of groups per x variable, fine-ness of grid
 set.seed(100)
 n = 1000
-k = 10
-ngroups = 5
+k = 4
+ngroups = 10
 
 # construct random covariance matrix
 z = abs(rnorm(k, 0, 2))
@@ -31,7 +32,7 @@ s = tcrossprod(z)
 
 # simulate covariates
 X = MASS::mvrnorm(n = n, Sigma = s,
-                  mu = rnorm(10, 0, k))
+                  mu = rnorm(k, 0, 1))
 
 # construct random betas
 beta = rnorm(k, 0, 10)
@@ -40,7 +41,7 @@ beta = rnorm(k, 0, 10)
 # linear function of these covariates
 # thus treatment effects vary by individual
 # can make non-linear but for now I'll leave it
-tau = X %*% beta
+tau = sin(X) %*% beta
 tau = as.vector(tau)
 
 # treatment status is a linear function of both effectiveness
