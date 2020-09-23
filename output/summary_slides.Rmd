@@ -1,0 +1,231 @@
+---
+title: "From LATE to Great"
+subtitle: "Model-based extrapolation of local treatment effects"
+author: "Brice Green"
+institute: "MIT"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+# So you have a causal estimate
+
+- Well-identified (experimental, strong instrument, plausible matching, whatever)
+- Large sample size
+- We think it's pretty good
+- Maybe even a large-scale experiment!
+
+---
+
+# So you have a causal estimate
+
+- What now?
+- If we had constant treatment effects, our work is done!
+- In social science we rarely do!
+
+---
+
+# So you have a causal estimate
+## Reasons to believe in varying treatment effects
+
+- Economics: People try to do their best given their circumstances, so as circumstances change so do their choices
+- Medicine: Interactions can be important (like drinking alcohol and taking Tylenol)
+- Feminist and Anti-racist studies: Growth of intersectionality as an analytical framework
+
+---
+# So you have a causal estimate
+## The problem: External Validity
+
+- How 'local' is our local average treatment effect?
+- To what extent can we extrapolate?
+- In practice, how do we use these causal estimates to come to policy conclusions?
+
+---
+# What this talk will cover
+
+- Framework for estimating treatment effects that vary with observables
+- Some math about that framework
+- Comparisons to existing methods
+- Policy analysis under this framework
+
+---
+# The example
+Suppose we have a plausibly causal estimate for an intervention.
+
+- Roll out healthcare to people below a certain income threshold in Oregon
+- Do it through a lottery
+- Use the lottery draws as an instrument, addressing non-compliance in the uptake
+
+---
+# The example
+
+But this could vary with observables!
+
+- Age
+- Health risk factors
+- Family Structure
+- Absolute Income
+- Location (distance to a hospital)
+- Quality of local care
+
+
+---
+# An example
+
+Now suppose we have data on some of these things, say Age and Distance from a hospital. I've centered and scaled variables for ease of the example.
+
+---
+# An example
+
+Let the treatment effect, $\tau$ be a function of Age and Distance, so that 
+
+
+$$\tau = Age + Distance^2$$
+
+
+---
+# An Example
+
+```{r, echo = F, message = F, warning = F, fig.width = 12, fig.height = 5}
+
+library(plotly)
+library(data.table)
+
+plot_data <- data.table(
+  Age = seq(-3,3, by = 0.01),
+  Distance = seq(-3, 3, by = 0.01)
+)
+
+
+tau <- outer(seq(-3,3, by = 0.01), seq(-3,3, by = 0.01), FUN = function(Age, Distance) Age - Distance^2)
+
+
+plot_ly(x = seq(-3,3, by = 0.01), y = seq(-3,3, by = 0.01), z = ~ tau,width=800,
+    height=500) %>% 
+  add_surface()
+
+```
+
+---
+# An Example
+
+How do we estimate this? Stratification! Each cell will have a separate treatment effect estimate, and in the limit they will converge (presuming $n_j \to \infty$). First let's see the raw data, observed with error $Normal(0,2)$:
+
+
+```{r, echo = F, message = F, warning = F, fig.width = 12, fig.height = 5}
+library(data.table)
+library(ggplot2)
+
+s = matrix(c(1,0.2, 0.2,1), nrow = 2)
+err = rnorm(1000, 0, 2)
+
+sim <- as.data.table(MASS::mvrnorm(n = 1000, Sigma = s, mu = c(0, 0)))
+setnames(sim, colnames(sim), c("Age", "Distance"))
+
+sim[, Outcome := Age - Distance^2 + err]
+
+plot_ly(sim, x = ~Age, y = ~Distance, z = ~Outcome)
+
+```
+
+---
+# An Example
+
+Now let's plug it into bins and take averages by bin (in this case we could just take the average and get the LATE since there is full compliance by assumption).
+
+```{r echo = F, message = F, warning = F}
+library(purrr)
+bin <- function(vec, groups) {
+  findInterval(vec, quantile(vec, probs = seq(0, 1, by = 1/groups)),
+               all.inside = T) 
+}
+
+groups <- map_df(sim[,.(Age, Distance)], bin, groups = 30)
+
+plot_data <- data.table(groups, sim[,.(Outcome, `True Effect` = Age - Distance^2)]) %>% 
+  .[,.(Estimate = mean(Outcome), `True Effect` = mean(`True Effect`)), by = c("Age", "Distance")]
+
+ggplot(plot_data, aes(x = Estimate, y = `True Effect`)) +
+  geom_point() +
+  geom_abline(slope = 1)
+```
+
+
+
+---
+# The Model
+
+1. Break the data into cells
+2. Allow the treatment effects estimated to vary over those cells
+3. Let the cells inform each other through a latent model
+4. Let the data drive the extent to which they inform each other
+
+---
+# The Model
+
+The current state includes (1) and (2); problem is the curse of dimensionality!
+
+Given $N$ observed outcomes $y$ indexed by $i$ and $J$ cells indexed by $j$, the current model is
+
+$$y_i \sim f(y_i | x_ij, \beta_j)$$
+
+where $f$ is some likelihood. But if we want $k$ groups per variable, the number of cells grows at $k^d$.
+
+---
+# The Model
+
+### Proposition: we can address this problem by providing a class of models that describe how the cells vary.
+
+---
+# The Model
+
+This is sometimes called a _hierarchical_ or _multilevel_ model. 
+
+Original Likelihood:
+$$y_i \sim f(y_i | x_ij, \beta_j)$$
+
+Latent description of variation:
+$$\beta_j \sim g(\theta)$$
+
+Priors over the parameters of the previous model:
+$$\theta \sim \pi(\theta)$$
+
+---
+# The Model
+
+How do we pick $g(\theta)$? Start with a base model, and figure out how things go from there. I will start with the base model of Constant Treatment Effects. This is to say that
+
+$$\beta_i = \beta_j \forall i,j \in J$$
+That gives us a central location for all of our $\beta_j$ values, call it $\mu$. That means that in our model
+
+$$E(\beta_j - \mu) = 0$$
+if we don't have any other information about $j$.
+
+---
+# The Model
+## Ordinal & Numeric variables
+
+We have some idea about ordering for ordinal and numeric data. 
+
+Starting Point:
+- Given a set of cells $i$ and $j$, let's construct an evenly spaced grid, and think about distance in terms of adjacency. 
+- Let's also presume that observations that close (neighbors) have higher correlation than distant regions.
+
+If you can't do either of these, pick a different latent model!
+
+---
+# The Model
+## Ordinal & Numeric variables
+
+This grid becomes a graph or lattice, and the relationship becomes a Markov Random Field (I'm going to pick a normal likelihood, so we get a Gaussian Markov Random Field). 
+
+
+
+
+
+
+

@@ -1,0 +1,21 @@
+# for now ignore data from OHIE, not used
+data/*
+
+# ignored compiled Rmd outputs
+*.pdf
+*.html
+*.log
+
+# output build files
+output/binary/
+output/img/
+output/libs/
+output/summary_cache/
+output/summary_files/
+output/summary_slides_files/
+output/tbl/
+
+# R project files
+.Rdata
+.Rhistory
+.Rproj.user/

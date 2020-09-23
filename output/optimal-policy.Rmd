@@ -1,0 +1,167 @@
+---
+title: "A Method for Optimal Treatment Decisions Given Local Estimates of Varying Treatment Effects"
+subtitle: ""
+author: "Brice Green"
+date: "`r Sys.Date()`"
+output:
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: xelatex
+  tufte::tufte_html: default
+  tufte::tufte_book:
+    citation_package: natbib
+    latex_engine: xelatex
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
+options(htmltools.dir.version = FALSE)
+```
+
+# Introduction
+
+Field experiments and quasi-experimental approaches to policy evaluation have grown enormously over the past 20 years. However, under assumptions of varying treatment effects, it is difficult to interpret even well-identified causal estimands in terms of policy relevant decision variables. Because of the desire for data driven policy decisions and ethical concerns around long-running randomized controlled trials, there is increasing interest in targeting interventions at sub-populations who stand to benefit most from the interventions.
+
+I derive a way to identify optimal policy decisions given local average treatment effect estimates. 
+
+# The problem & notation
+
+There are going to be a _lot_ of utility functions in this whole thing, and I'm going to do my best not to abuse notation. In addition, there are parts of this that are relatively informal right now, but will hopefully get more formal at a later date.
+
+## Notation:
+
+* Policy-Maker (or analyst) PM
+  * Utility Function $U_{pm}$
+  * Sub-utility function $u_{pm}$
+  * Parameters in expected value function $\theta$
+  * Budget for policy $B_{pm}$
+* Causal Estimation
+  * Outcome variable $Y$
+  * Treatment Effect $\tau$
+  * Treatment $T$
+  * IV inducing treatment $z$
+  * Treatment status which is function of $z$, $d(z)$
+    * Always-takers: $d(1) = d(0) = 1$
+    * Never-takers: $d(1) = d(0) = 0$
+    * Compliers: $d(1) - d(0) = 1$
+    * Assume no hipsters $d(1) - d(0) = -1$.
+* Discrete Choice Modeling of Treatment Uptake
+  * Population $N$
+  * Individual $i$
+    * characteristics of individuals $s_i$
+  * Choice Set $C_i$ 
+    * Set of choices $K$
+    * Characteristics of good $k \in K$ are given by $x_k$
+
+## Setup:
+
+Because everything is going to already get complicated enough, I'm going to consider a binary treatment variable with fixed cost for each unit of rollout. This excludes notions like transport cost, variable dosages, etc., but might be relevant to decide things like rolling out free contraception in schools, say. I also think that the framework is easily to extend with changes to a cost function or a model with varying dosages.
+
+I consider first the problem of how to allocate treatments to a set of possible treatment units given a limited budget, second how to extend this to a set of possible treatments, and finally how to allocate across a set of different outcomes. In all of these cases I am not presuming dictatorial authority by the government, e.g. the ability to force people to partake in things that they do not choose to. I believe this requires a different analysis, though it could be accommodated in the same general framework.
+
+In all of these cases I presume the budget to be fixed, and do not way the costs of taxation to raise the funds for these treatments. In this sense, the budget is an endowment that PM is attempting to spend as effectively as possible, perhaps in the context of annual donations from a wealthy individual's trust. In the context of public finance or something similar, this should be considered purely as a partial-equilibrium analysis, given fixed capital.
+
+Within each case, there are two important problems that are of interest to a policy maker:
+
+1. How do I optimize over outcomes, $Y$, within a limited budget set, given my best guess of the range of outcomes and ability to assign treatment status?
+2. How do I maximize welfare of the population given my ability to assign treatment status?
+
+
+# Optimizing over outcomes as the policy-maker (PM)
+
+## Fixed budget, one treatment, one outcome
+
+
+Setting up the problem. PM chooses $T$, a vector of initial treatment assignments. 
+
+Let $\tau_i(T_i) = E(Y_i(d(T_i = 1)) - Y_i(d(T_i = 0)))$. Then our problem is
+
+> Lemma: Don't give the treatment to never-takers or always-takers
+
+> First, let's reasonably assume that we would rather not spend money for no benefit. I'm sure there's a way to formalize that, but it's a real corner case where we have money left over. We know that
+
+> $$\tau_i(T_i) = E(Y_i(d(T_i = 1)) - Y_i(d(T_i = 0)))$$
+
+> So if $d(0) = d(1)$, then $\tau_i(T_i) = 0$, and we are better off not investing in them.
+
+Notably, this result is _not_ true when we move to analyzing welfare. Still, in this context these two seem fairly self-evident
+
+Now I'll consider the population of compliers, when we are not certain about outcomes given treatment (certainty is a fairly trivial subcase). Suppose we have a state-space of possible outcomes given treatment status assignments parameterized by a set of random variables $\theta$. This helps represent that we are not certain about the baseline case or the treatment effects or anything else.
+
+> Lemma: Optimally, PM Maximizes Expected Utility of Treatment Assignment
+
+> If PM has a preference relation over outcomes that satisfy standard axioms of completeness, transitivity, continuity, local non-satiation, and convexity, then it can be represented by a utility function that maps preferences to an ordinal ranking. Call that (possibly state-specific) utility function $u_{pm}(T)$, where T is a vector of treatment assignments for all agents $i \in N$. Under uncertainty, given a state space $\Omega$, it is optimal for PM to maximize
+
+> $$EU_{pm}(T) = \Sigma_{\omega \in \Omega} p_\omega u_{pm}(T, \omega) $$
+
+> This follows from standard von Neumann-Morgenstern utility theory. [^1]
+
+[^1]: I'm really only using $u_{pm}$ here because later we will also have the utility functions of the underlying agents, which otherwise gets really confusing.
+
+While there is considerable evidence that people do not do this in practice, I am not proposing this as an empirical description of human behavior, but instead as a framework for making optimal policy decisions. Again, we are sort of in the comfortable world of vNM utility, economists should love this. And how does an agent optimally come to expectations about a state-space? By updating their beliefs! All results should be well-known, this is just setup.
+
+> Lemma: Optimally, PM is a Bayesian
+
+> Presume that our state-space of outcomes is modeled by a distribution parameterized by $\theta$. 
+
+> $$EU_{pm}(T) = \int P(\theta | E) u(T, \theta) d\theta$$
+
+> Given prior beliefs over the parameter space $\theta$ and evidence $E$ that helps to identify the parameters $\theta$, the posterior distribution of the parameters is given by $\Theta = P(\theta | E) \propto P(\theta)P(E | \theta)$ (this follows from Bayes theorem).
+
+For the complier population this seems pretty intuitive, and we basically are on the budget line as long as the expected utility from the treatment status is positive for enough people to exhaust the allocated budget.
+
+But what about the non-compliers? We just through them out? Well, we can still come to a best guess about whether unit $i$ is a complier, and include that as a parameter in our update. Suppose we have some way of updating a prior about the probability that a given unit is a complier (e.g. some type of evidence). Then the optimization simply includes a parameter for the probability that unit $i$ is a complier! 
+
+## Example: normally distributed outcomes & $\tau$ estimates
+
+Suppose the outcome of interest is reasonably described by a normal distribution. Suppose further than we believe the treatment in question to only impact the mean of the distribution, but not the variance, and that only unit $i$'s treatment status affects the mean. In other words, letting $\mu_i(1)$ indicate the mean of unit $i$ given treatment and $\mu_i(0)$ indicate the mean without treatment,
+
+$$Y_i \sim N(\mu_i, \sigma_i)$$
+$$\mu_i(T) = T_i \tau_i(T_i) + \mu_i(0)$$
+
+We don't know $\mu_i$ because we don't know $\tau_i$, $\mu_i(0)$, or $\sigma_i$. Let $\theta_i$ be a vector of parameters $[\tau_i, \mu_i(0), \sigma_i]$. Given our evidence (ignoring the practicality of estimation for now), our optimization is
+
+$$\begin{aligned}\operatorname*{argmax}_{T_i} EU[Y(T_i)] &= \int_{\theta_i}u(Y(T_i), \theta_i) P(\theta_i) d\theta_i\end{aligned}$$
+In this case, we have evidence for $\theta_i$, so we update our priors via Bayes' rule and the evidence from our experiment.
+
+## Multiple policies, fixed budget, same outcome variable
+
+If we have multiple possible treatments for the same outcome variable, all we do is allow $T_i$ to take on multiple possible treatment statuses, and calculate $\int_{\theta_i}u(Y(T))d\theta_i$ for each one for unit $i$. Pick the higher one. If they have different costs then this enters into a joint optimization across all units, where we integrate across all units and include cost in the utility function.
+
+One practical way to conduct this optimization is to envision ranking the expected utility of treatment plans. Because this might have a large number of permutations, simply sort them by the expected utility of treatment divided by the cost of the treatment, and go down the list until the budget is exhausted.[^2]
+
+[^2]: Maybe there's a proof that this works? Seems pretty clear though unless there's some weird state dependence of the budget which wouldn't make sense in this case since the states are just possible treatment values.
+
+## Multiple policies, fixed budget across policies, different outcome variables
+
+If we have multiple policies then we need to change some things up. One way forward is to introduce a mapping of multiple policies to a common outcome. Consider policies with outcomes $X$ and $Y$. Introduce monotonic functions $f$ and $g$, where $f: X \to Z$, $g: Y \to Z$, possibly with error. Project outcomes of policies $X$ and $Y$ into $Z$, and then conduct the optimization as above.
+
+It will always be at least as good to first rank treatments by unit within the same outcome variable and subsequently project into the new space. To see this, consider a known, deterministic set of functions $f$ and $g$. Because $f$ and $g$ are monotonic, any set of policies that maximizes $X$ will also be the highest solution of $Z = f(X)$. If $f$ and $g$ are estimated with error or otherwise stochastic, the ranking within $X$ will be strictly more informative than the ranking in $Z$ in the sense of Blackwell.[^3] As a consequence, in order to be as informative as possible, this optimization should be nested.
+
+[^3]: I need to make this more formal, but I'm pretty sure that if $f$ and $g$ contain any uncertainty then the map onto $Z$ is a form of "garbling" in his terms.
+
+# Optimizing welfare as PM
+
+Welfare is a much trickier question, and it quickly becomes intractable. I borrow from the discrete choice literature in order to make progress, analyzing treatment uptake as a function of observable characteristics of both the treatment and the individual. In order to actually estimate the models (even in order to properly maximize unit-specific treatment effects).
+
+In general, people will have different preferences over outcomes. I will be presuming some form of utility-maximization framework in order to make progress, though this assumption is less warranted in this context. One way to think about this assumption is that, as the policy-maker, our prior belief is that the individuals in the potential treatment group are attempting to maximize their utility. In the case where we have additional information about the group, perhaps this could be weekend.
+
+## The setup
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
