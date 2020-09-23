@@ -5,15 +5,15 @@ library(data.table)
 
 # load helpers that construct lattice
 # for treatment effect estimate
-source("src/helpers/make_grid.R")
-source("src/helpers/visualize_effects.R")
+source("src/R/helpers/make_grid.R")
+source("src/R/helpers/visualize_effects.R")
 
 
 # one core per chain
 options(mc.cores = 4)
 
 # compile stan model
-model <- stan_model("src/models/stan/full-causal-model.stan")
+model <- stan_model("src/stan/full-causal-model.stan")
 
 
 # simulation exercise
