@@ -94,3 +94,22 @@ group_index <- standata$group_index
 # visualize sorted effects by group vs. actual observations
 plot_effects(est_tau, tau, actual_treatment, natural_uptake, rand_assign,
              standata$group_index)
+
+plot_pred_v_raw(est_tau, tau, actual_treatment, natural_uptake, rand_assign,
+             standata$group_index)
+
+plot_pred_mean_v_raw(est_tau, tau, actual_treatment, natural_uptake, rand_assign,
+                standata$group_index)
+
+# compare to point estimates from 2sls for same structure
+
+data.table(actual_treatment, pred = pred$fit, outcomes, group_index) %>%
+  split(by = "group_index") %>%
+  lapply(function(x) data.table(Estimate = coef(lm(outcomes ~ pred, data = x))[2])) %>%
+  rbindlist(idcol = T) %>% setnames(".id", "group_index") %>%
+  .[,group_index := as.integer(group_index)] %>%
+  merge(data.table(tau, group_index) %>%
+          .[,.(tau = mean(tau)), by = group_index]) %>%
+  ggplot(aes(x = Estimate, y = tau, group = Estimate)) +
+  geom_point() +
+  theme_minimal()
