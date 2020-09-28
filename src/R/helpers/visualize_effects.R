@@ -23,12 +23,12 @@ plot_effects <- function(est_tau, tau, actual_treatment, natural_uptake,
 
   ggplot(plot_data, aes(x = Ind, y = TrueEffect, color = N)) +
     geom_pointrange(aes(y = mean, ymin = LCI, ymax = UCI),
-                    color = "#009ADF") +
+                    color = "#A31F34") +
     geom_crossbar(aes(y = mean, ymin = LC50, ymax = UC50), width = 0.5,
-                  color = "#009ADF") +
+                  color = "#A31F34") +
     geom_point() +
-    xlab("Index") + ylab("Treatment Effect") + theme_minimal() +
-    scale_color_distiller(palette = "Oranges")
+    xlab("Index") + ylab("Treatment Effect") +
+    theme_minimal()
 }
 
 plot_pred_v_raw <- function(est_tau, tau, actual_treatment, natural_uptake,
@@ -56,12 +56,12 @@ plot_pred_v_raw <- function(est_tau, tau, actual_treatment, natural_uptake,
 
   ggplot(plot_data, aes(x = Ind, y = TrueEffect, group = Ind)) +
     geom_pointrange(aes(y = mean, ymin = LCI, ymax = UCI),
-                    color = "#009ADF") +
+                    color = "#A31F34") +
     geom_crossbar(aes(y = mean, ymin = LC50, ymax = UC50), width = 0.5,
-                  color = "#009ADF") +
+                  color = "#A31F34") +
     stat_summary(fun.data = "mean_se") +
     xlab("Index") + ylab("Treatment Effect") + theme_minimal() +
-    ggtitle("Posterior (blue) vs. True Effect (black)",
+    ggtitle("Posterior (red) vs. True Effect (black)",
             subtitle = "Line is 95% interval, box is 50% interval")
 }
 
@@ -90,6 +90,6 @@ plot_pred_mean_v_raw <- function(est_tau, tau, actual_treatment, natural_uptake,
 
   ggplot(plot_data, aes(x = mean, y = TrueEffect)) +
     geom_point() +
-    xlab("Posterior Mean") + ylab("Treatment Effect") + theme_minimal() +
-    scale_color_distiller(palette = "Oranges")
+    xlab("Posterior Mean") + ylab("Treatment Effect") +
+    theme_minimal()
 }

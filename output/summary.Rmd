@@ -36,7 +36,7 @@ One great advantage of modern measurement is that we have rich information about
 
 Through the paper I am going to be dealing with the estimation of a treatment effect given either an experiment with non-compliance or a "natural" experiment, presuming that the analyst does not know a priori that treatment effects are constant. The treatment effects, in this case, are a kind of latent response surface, varying across characteristics that are either observed or not, corresponding to the expected outcome for an individual receiving treatment. I will work with binary treatments and continuous outcomes in an instrumental variables setting, though the results generalize easily to an experimental context with full compliance. [^1]
 
-[^1]: It is less obvious how this would generalize to a regression discontinuity design similar inference methods.
+[^1]: It is less obvious how this would generalize to a regression discontinuity design or similar inference methods.
 
 Given subjects indexed by $i$, a binary treatment $d \in \{0,1\}$, a continuous or binary instrumental variable $Z$, and an outcome $Y$, let $Y_i(1)$ denote the outcome for individual $i$ had they gotten the treatment and $Y_i(0)$ indicate the outcome had they not recieved the treatment. 
 
@@ -84,7 +84,7 @@ The trick to why this model works so effectively is that it no longer forces the
 
 But what counts as reasonable likely depends on the context. In this paper, I propose two a multilevel model that can approximate arbitrary variation of treatment effects along observed continuous, ordinal, and unordered variables, demonstrating them to be good starting points for estimating treatment effects and projecting them onto new populations. 
 
-Specifically, for continuous and ordinal variables, I leverage a model from the spatial statistics literature which treats the grid as a Gaussian Markov Random Field. In two dimensions, call $\theta_{i,j}$ a parameter in a cell along an even grid of binned covariates. Its neighbors are then $\Gamma = \{\theta_{i-1, j}$, $\theta_{i+1, j}$, $\theta_{i, j-1}\}$, and $\theta_{i, j+1}$. The simplifying assumption of a Gaussian Markov Random Field (relative to a general random field) is that all of the information relevant to estimating cell $\theta_{i,j}$ is incorporated in its neighboring estimates. In other words, for some parameter
+Specifically, for continuous and ordinal variables, I treat the covariate lattice as a Gaussian Markov Random Field. In two dimensions, call $\theta_{i,j}$ a parameter in a cell along an even grid of binned covariates. Its neighbors are then $\Gamma = \{\theta_{i-1, j}$, $\theta_{i+1, j}$, $\theta_{i, j-1}\}$, and $\theta_{i, j+1}$. The simplifying assumption of a Gaussian Markov Random Field (relative to a general random field) is that all of the information relevant to estimating cell $\theta_{i,j}$ is incorporated in its neighboring estimates. In other words, for some parameter
 
 $$P(\theta_{i,j} | \theta_{i,-j}; \theta_{-i,j}) = P(\theta_{i,j} | \Gamma)$$
 
@@ -139,106 +139,6 @@ In the limit, as $\epsilon \to 0$, $\tau_\epsilon \to \tau$.
 Given our new knowledge of the treatment effect in that cell, we can make project this local average treatment effect onto the new population by taking a weighted average of the cell-wise LATE estimates, where the weights are determined by the new population. In the survey literature this is known as _regression and post-stratification_, a model that is used to address non-representative responses in surveys, and (for instance) combine polls across states and forecast how a new state will respond (given state-level demographic information).
 
 In principle, one could simply estimate this via 2-stage-least-squares.
-
-
-
-That is all well and good, but shouldn't we worry about power? After all, the estimators of $\tau$ do hold in the limit, but that will limit the sample size of the traditional LATE estimators in a massive way. In addition, this seems like a trade-off, because given a finite sample of $N$ people, our estimator of $\tau_\epsilon$ is going to have a variance that shrinks with $N_\epsilon$, the number of people in that portion of the sample. 
-
-Thus we find ourselves between a rock and a hard place; as we shrink $\epsilon$ we converge to the true treatment effect for the compliers at a specific region on the curve, but with a finite sample we are also _necessarily_ increasing the variance of the local estimator (presuming that estimator is something like two stage least squares or perhaps cell-wise average differences in outcomes in a randomized experiment). This implies that as researchers and analysts, we a permanently in a kind of "small $N$" setting.
-
-At this point, we must be brave. Until now we have forgone any type of structure, modeling these averages as non-parametric relationships between observations. But if we want to understand how these effects actually vary, we must construct a method for parameterizing that variation. Otherwise, we are stuck in this trap, with cells growing lonelier at a geometric rate with each added variable. In other words, if we are afraid to characterize the variation in treatment effects across different sorts of individuals and situations, we will be unable to project treatment effects onto a new population.
-
-# Building the multilevel model
-
-I approach the multilevel likelihood via the "Penalized Complexity" approach described by @simpson2017penalising. In this framework, we start with a _base_ model, but also allow for possibly infinite variance away from this base model. However, as a starting point, we emphasize the portions of the model space, while under-weighting the highly complex variation. With a fully Bayesian estimation of the effects, we end up with a posterior distribution that considers the evidence for a continuum of models surrounding that base model, and the priors act as a means to regularize the space for the model search. Importantly, these priors wash out upon observing a substantial amount of data, and instead represent a good set of candidate models before observing any data at all.
-
-In the absence of knowledge about the specific ways in which parameters are likely to vary across the dimensions of a characteristic, I consider a constant treatment effect as the _base model_. All the while, in the limit, I want to allow the data to drive to the other extreme, where the base model does not describe the data well at all.
-
-Consider a one-dimensional set of covariates with a single treatment to be estimated. The binning procedure divides it into a an even grid. I'll represent the midpoints of each interval as a point on a one-dimensional lattice. In this context, since we are uncertain about the true treatment value is, suppose our estimate is random normal variable with mean $\mu_i$ and variance $\sigma_i$. By linearity we can estimate the average across all of these points and difference it out, so
-
-$\tau_i \sim Normal(\mu + (\mu_i - \mu), \sigma_i)$
-
-by construction, $E(\mu_i - \mu) = 0$ and $Var(\mu_i - \mu)$
-
-
-```{r echo = F, message = F, warning = F}
-
-library(ggplot2)
-
-uniform_points <- runif(1000, 0, 1)
-
-bin(uniform_points)
-
-
-```
-
-In the context of this estimation, this corresponds to a $\rho$ of 0, which would mean that variations away from the mean are completely random. Another way of looking at it might be that variations in the effects are not likely to be autocorrelated until seeing evidence otherwise. The fully Bayesian estimate integrates across all values of $\rho$, updating the full class of prior models to a posterior distribution that helps to capture how the treatment effects vary across cells. 
-
-This class of model allows the estimates between cells to inform each other, increasing the power of our estimate through the inclusion of prior information (in this case that we expect $\theta$ values to be relatively similar in adjacent cells). The precise degree to which they are correlated is to be determined by the data, and the parametric form we assigned to the data allows us to escape the perpetual small $N$ setting.
-
-I will start with the case where we believe or want to test whether a treatment effect varies along different parts of either ordinal or numeric variables. In both of these cases, we can presume some kind of structure: with numeric variables we have good metrics of distance (perhaps an L1 or L2 norm on some $R^d$ space). With ordinal variables, we don't necessarily know "how far" one category is from another, but without additional information we typically start from a point where they are evenly space. In both of these cases, we can at least order a set of observations, and thus we have a sense that some groups within each set are closer or farther away.
-
-Imagine that we have two, numeric variables along which we want to estimate some function. For example, we are implementing a treatment where we offer free or reduced-cost healthcare to a set of people in the U.S., and we want to see how the treatment effect changes based on how far the subject is from a hospital (in terms of miles, say), and how old they are.
-
-```{r, echo = F, message = F, warning = F}
-library(data.table)
-library(ggplot2)
-
-s = matrix(c(1,0.2, 0.2,1), nrow = 2)
-
-sim <- as.data.table(MASS::mvrnorm(n = 1000, Sigma = s, mu = c(0, 0)))
-setnames(sim, colnames(sim), c("Age", "Distance"))
-
-ggplot(sim, aes(x = Age, y = Distance)) +
-  theme_minimal() +
-  geom_point()
-
-```
-
-Now imagine a treatment effect which is a smooth function of those variables $tau = age^2 + distance$. 
-
-```{r message = F, echo = F, warning = F}
-sim[, TE := Age^2 + Distance]
-
-library(plotly)
-
-
-
-```
-
-For estimation, I build on recent work by @gao2020improving, which uses a "structural prior" to better determine how the various cells should inform each other to improve stratification in a survey setting to a new population. Specifically, for variables that have a known order, e.g. continuous or ordinal variables, that the way regression coefficients vary around a central value follows an auto-regressive process of order one. This model is a simple form of a Gaussian Markov random field [@rue2005gaussian], which are widely used in the spatial statistics literature because of their ability to smooth across discrete spatial measurements 
-
-First, let $\theta$ be the average estimate across all cells, and let $\theta_i$ be the cell specific variation away from that central value for cell $i$. Call the variation in the cell that is immediately to the left of cell $i$ on a numberline $\theta_{i-1}$. Let hyper-parameter $\phi$ be the auto-regressive coefficient between the $\beta$ estimates of the cells. Let $\alpha$ and $\beta$ be parameters for the hyperprior on rho, which has is constrained to the $[0, 1]$ interval to enforce stationarity. This transformation is to avoid a divide by 0 error Then 
-
-$$\phi \sim Beta(\alpha, \beta)$$
-
-
-$$\rho = 2\phi - 1$$
-
-For $i = 1,$
-
-$$\theta_1 \sim Normal(0, \dfrac{1}{1- \rho^2}) $$
-
-For $i > 1,$
-$$\theta_i \sim Normal(\rho\theta_{i-1}, \sigma) $$
-
-where an appropriate set of values are chosen in the context of the specific application by the analyst. The shape parameters for the $Beta$ distribution help dictate the prior on the level of correlation between the cells, and $\sigma$ determines prior on how much the $theta$'s vary between cells.
-
-For variables without an order that we expect to be relevant to their estimation, we can characterize the variation in their effects as being drawn from a random normal distribution, parameterized by a variance across the means within the cells (as well as the traditional scale of the error term). This likelihood has a long tradition in meta-analysis [@meager2019understanding] and education research [@rubin1981estimation]. What it does is allow the cells to inform each other through a pooled mean, while still maintaining the ability to characterize variance between the cells by the variance of the latent normal distribution, again getting us out of the "small N" problem by limiting the model search space. 
-
-In other words, we have a search space for models which includes both the case where all treatment effects are the same, and where they are all completely independent. Again, we can think of constant treatment effects as the "base" model, while allowing the data push us away from that model as the variance between groups increases, corresponding to a prior on the hyper-variance with a mode at 0 and long tails. While this does not rule out any cases of the model, it does help to push our baseline estimates towards a constant-treatment-effects assumption; sometimes this type of prior is referred to as "weakly informative," since it is weaker than a prior that provides extremely strong bounds on viable models while providing more structure on the parameter space than an uninformative prior (for example an improper or maximum entropy prior) [@gelman2017prior].
-
-# A deeper look at these priors
-
-Ok so there's some math here that I don't get yet, but hopefully by the time I get this really rolling I will get it a bit better. Basically, there's a model for continuous variables called a "Gaussian Process," which is shown to approximate any function in the limit. A fun sidenote, traditional Gaussian Processes are also sometimes called Bayesian Neural Networks, because they are the infinite limit of a one-dimensional feedforward neural network and the number of neurons approaches infinity. There is a whole lot of work in this space in machine learning about deep learning and stuff but I'm ignoring that for now.
-
-The fun bit is, that these are one-dimensional special cases versions of something called a _Gaussian Random Field_, which are multi-dimensional versions used in spatial statistics for interpolation (sometimes called kriging). However these are really complicated to estimate, hard to interpret, and often computationally intractable. So instead, under certain assumptions, you can use a _Gaussian Markov Random Field_, where each observation is only influenced by their neighbors on a grid. That's where the Markov comes from, it's a memoryless process, only dependent on the previous state.
-
-Those will converge to a Gaussian process, which in turn will be able to nicely approximate any function, under some conditions which I don't understand yet. This prior is a special case of this type of Gaussian Markov Random Field, since it has a normal likelihood and is memoryless (though it still conditions recursively on previous estimates of $\beta$). So I'm pretty sure that we can prove that under weak assumptions it'll converge to the treatment effect response distribution.
-
-Perhaps more important than asymptotics, it is fundamentally built to deal with multidimensional smooth processes like the ones we are treating in this model! Alright this was super informal so far and is missing _all_ the citations, but hopefully it gives some intuition behind why some people who know more math than I do like this prior.
-
-Perhaps EVEN MORE IMPORTANTLY this paper can now mention neural networks, which means economists will be forced to love it because now it has the words machine learning in it.
 
 # Extrapolation and Optimal Policy
 
