@@ -1,5 +1,5 @@
 # for now ignore data from OHIE, not used
-data/*
+data/raw/*
 
 # ignored compiled Rmd outputs
 *.pdf

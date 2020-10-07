@@ -25,11 +25,7 @@ parameters {
   real alpha0; // intercept
   real beta; // global slope
 
-  // real a_z; // intercept term for first stage regression
-  // real b_z; // slope term for first stage regression
-
   real <lower=0> sigma; // residual variance
-  // real <lower=0> sigma_d; // variance from first stage regression
   real <lower=0> sigma_alpha; // variance for intercept RE
   real <lower=0> sigma_beta; // variance for slope RE
 

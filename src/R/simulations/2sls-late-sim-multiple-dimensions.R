@@ -17,20 +17,16 @@ options(mc.cores = 4)
 # compile stan model
 model <- stan_model("src/stan/full-causal-model.stan")
 
-
 # simulation exercise
 # n = nobs
 # k = ndim for covariate grid
 # ngroups = number of groups per x variable, fine-ness of grid
 n = 1000
 
-all_k <- c(1,2,3,4,5)
+all_k <- 5
 
 squared <- function(x) x^2
-cubed <- function(x) x^3
-
 all_fun <- c("I", "squared", "sin")
-
 
 for(q in 1:length(all_k)) {
 
@@ -80,13 +76,13 @@ for(q in 1:length(all_k)) {
     pred <- predict(lm_robust(actual_treatment ~ instr, se_type = "stata"),
                     se.fit = T)
 
-    group_list <- c(4, 5, 6)
+    group_list <- 5:10
 
     for(i in 1:length(group_list)) {
 
       ngroups = group_list[i]
 
-      if(ngroups^k < 2000) {
+      if(ngroups^k < 200000) {
 
         dname <- paste0("output/model-comparisons/",
                         paste0("n-", n, ",ngroups-", ngroups,",k-",k,",fun-",fun))

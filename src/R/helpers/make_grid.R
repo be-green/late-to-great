@@ -46,8 +46,9 @@ get_index_neighbors <- function(index_vector, groups) {
 
   mat <- matrix(ncol = length(index_vector))
 
+  array_dim <- dim(groups)
   nbr_tbl <- rbindlist(lapply(1:length(index_vector), function(i) {
-    if(index_vector[i] < nrow(groups)) {
+    if(index_vector[i] < array_dim[i]) {
       moved <- index_vector
       moved[i] <- index_vector[i] + 1
       data.table(
