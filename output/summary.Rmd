@@ -28,13 +28,22 @@ Causal estimates are critical for understanding policy interventions, but withou
 
 # Introduction
 
-Accurate inference for causal parameters is critical to testing theories and designing policy interventions. However, in a social science context, it is often implausible that all subjects respond the same way to interventions. While we can (and regularly do) relax the assumption of constant treatment effects, we are left with an estimate that is permanently glued to our specific sample.
+Our hope as scientists and policy makers is to perform inferences that generalize beyond the immediate scope of our experiments. Beyond simply the scientific enterprise, the ability to extrapolate from experiments to populations at large is key to effective policy decisions. However, it is often implausible to assume all people respond the same way to the same treatment, and when we relax that assumption, we are left with an estimate that is obnoxiously glued to our specific sample.
 
-Our hope as scientists and policy makers is to be able to make more general statements, projecting earlier estimates onto new samples, either to uphold/debunk theories or to use evidence to influence policy trade-offs. The ability to extrapolate parameters from previous estimates is key to tying causal estimation to future policy.
+One great advantage of modern measurement is that we have rich information about the different subjects in our studies, and even use that information to adjust our estimates for factors that we could not adequately randomize on or to accommodate different baselines from which we are measuring treatment responses. However, we can do more than merely adjust estimates of the average, but also directly estimate how treatment effects vary across the population.
 
-One great advantage of modern measurement is that we have rich information about the different subjects in our studies, and even use that information to adjust our estimates for factors that we could not adequately randomize on or to accommodate different baselines from which we are measuring treatment responses. I propose using that information not only to adjust estimates of the average, but also to directly estimate how treatment effects vary across the population, estimating how model parameters vary with observable characteristics of the subjects.
+In this context, I propose a four-step plan from moving from LATE to Great (no acronym as of now):
 
-Through the paper I am going to be dealing with the estimation of a treatment effect given either an experiment with non-compliance or a "natural" experiment, presuming that the analyst does not know a priori that treatment effects are constant. The treatment effects, in this case, are a kind of latent response surface, varying across characteristics that are either observed or not, corresponding to the expected outcome for an individual receiving treatment. I will work with binary treatments and continuous outcomes in an instrumental variables setting, though the results generalize easily to an experimental context with full compliance. [^2]
+1. Bin
+2. Model
+3. Project
+4. Maximize
+
+First, we bin observations into groups, based on their observable characteristics. When variables are continuous, this involves discretizing the variable into bins. Second we create a principled model that describes how the cells relate to one another. Third, we take our estimates from our first population and project them onto a new one based on know or expected weights for the new population. The fourth step, should you need it, uses the projections of the model in combination with a utility (or loss) function that represents policy trade-offs to maximize (minimize) expected utility for a new policy roll-out.
+
+The major challenge of this approach is that it runs head-long into the curse of dimensionality. The modeler faces a trade-off between the number of parameters to estimate and the number of observations to collect. Given a fixed set of observations $N$, the number of sub-groups grows exponentially along each dimension measured, representing (at minimum) three parameters to be estimated per group: the baseline response, the treated response, and the variance. The key insight here is that we have information about how these parameters relate to one another, which allows us to effectively identify high-dimensional, non-linear interaction effects.
+
+In the paper I am going to be dealing with the estimation of a treatment effect given an experiment with non-compliance, presuming that the analyst does not know a priori that treatment effects are constant. The treatment effects, in this case, are a kind of latent response surface, varying across characteristics that are either observed or not, corresponding to the expected outcome for an individual receiving treatment. I will work with binary treatments and continuous outcomes in an instrumental variables setting, though the results generalize easily to an experimental context with full compliance. [^2]
 
 [^2]: It is less obvious how this would generalize to a regression discontinuity design or similar inference methods.
 
@@ -52,17 +61,6 @@ Following the standard literature, I call "compliers" those in the sample who wo
 
 Furthermore, I presume that everything of interest has been measured and incorporated into the model, or that given observable characteristics $X$, we expect treatment effects $\tau$ to be a function of $X$, and not variables we have not measured. 
 
-In this context, I propose a four-step plan from moving from LATE to Great (no acronym as of now):
-
-1. Bin
-2. Model
-3. Project
-4. Maximize
-
-First, we bin observations into groups, based on their observable characteristics. When variables are continuous, this involves discretizing the variable into bins. Second we create a principled model that describes how the cells relate to one another. Third, we take our estimates from our first population and project them onto a new one based on know or expected weights for the new population. The fourth step, should you need it, uses the projections of the model in combination with a utility (or loss) function that represents policy trade-offs to maximize (minimize) expected utility for a new policy roll-out.
-
-The most novel parts of this paper fall under steps 2 and 4, as it is already current practice to perform "Stratified IV" in order to analyze how treatment effects vary across groups. However, as the number of dimensions grows, for a fixed number of bins per variable, the number of observations to identify effects in a given bin we need grows exponentially.
-
 In the machine learning literature it is common to construct estimators that induce sparsity so as to remove variables that are not highly predictive. However, in this context sparsity may not be desirable; typically we think of treatment effects as being smooth, and simply setting the marginal movement of a bin around a central value to zero constructs a jagged set of point estimates. In addition, we are often interested in uncertainty around treatment effects, and quantifying that estimation uncertainty is non-trivial for penalized estimators. Finally, depending on the size of the grid, we may not expect the marginal effect of a given bin to be large, but we may expect them to be non-zero. It may actually be preferable to estimate a series of small, smoother changes across a large number of points in a grid, rather than to construct a grid that is wider or smaller depending on point predictions.
 
 I propose a different type of model that relates estimates across cells through a latent likelihood equation. In other words, given some grid-wise sampling density
@@ -74,7 +72,7 @@ I construct a model that describes the variation of the treatment effects
 $$\tau_i \sim g(\theta),$$
 and finally I put a prior on the hyper-parameters $\theta$ that penalize the complexity of the model to prevent overfitting. So, finally, 
 
-$\theta \sim \Pi(\theta).$
+$$\theta \sim \Pi(\theta).$$
 
 This is commonly referred to a "multilevel" or "hierarchical" model, referring to its three-level structure, though it can be collapsed into a single likelihood. The structure itself is quite flexible, as the likelihood function $f$ can correspond to whatever the appropriate likelihood is for the observed data. Typically $g$ is parameterized by a normal distribution, owing to the central limit theorem, with a mean linearized out and variation around that mean parameterized depending on the specific application.
 
@@ -82,9 +80,7 @@ The goal of $g$ and $\Pi$ in this structure is not to provide strong information
 
 The trick to why this model works so effectively is that it no longer forces the various cells to be estimated independently of each other, and in the limit can accommodate both complete dependence and complete independence between cell-wise means. As the number of parameters to be estimated approach or exceed the number of observations we have available, it can limit the search for the appropriate model to a reasonable class.
 
-But what counts as reasonable likely depends on the context. In this paper, I propose two a multilevel model that can approximate arbitrary variation of treatment effects along observed continuous, ordinal, and unordered variables, demonstrating them to be good starting points for estimating treatment effects and projecting them onto new populations. 
-
-Specifically, for continuous and ordinal variables, I treat the covariate lattice as a Gaussian Markov Random Field. In two dimensions, call $\theta_{i,j}$ a parameter in a cell along an even grid of binned covariates. Its neighbors are then $\Gamma = \{\theta_{i-1, j}$, $\theta_{i+1, j}$, $\theta_{i, j-1}\}$, and $\theta_{i, j+1}$. The simplifying assumption of a Gaussian Markov Random Field (relative to a general random field) is that all of the information relevant to estimating cell $\theta_{i,j}$ is incorporated in its neighboring estimates. In other words, for some parameter
+For continuous and ordinal variables, I treat the covariate lattice as a Gaussian Markov Random Field. In two dimensions, call $\theta_{i,j}$ a parameter in a cell along an even grid of binned covariates. Its neighbors are then $\Gamma = \{\theta_{i-1, j}$, $\theta_{i+1, j}$, $\theta_{i, j-1}\}$, and $\theta_{i, j+1}$. The simplifying assumption of a Gaussian Markov Random Field (relative to a general random field) is that all of the information relevant to estimating cell $\theta_{i,j}$ is incorporated in its neighboring estimates. In other words, for some parameter
 
 $$P(\theta_{i,j} | \theta_{i,-j}; \theta_{-i,j}) = P(\theta_{i,j} | \Gamma)$$
 
@@ -99,7 +95,7 @@ $$\theta_{i,j} \sim Normal(\theta, \sigma),$$
 
 a common model in education research [@rubin1981estimation], meta-analysis [@meager2019understanding], and highly related models political science [@ghitza2013deep].
 
-While at first these parametric assumptions appear restrictive, they embed within them all important cases of interest. For example, $\alpha = 0$ corresponds to complete independence between all cells and $\alpha = 1$ corresponds to constant treatment effects. For unordered variables, as $\sigma \to 0$, we end up with constant treatment effects, and as $\sigma \to \infty$ we end up with cell-wise independent means, just as we would with stratified IV.
+While at first these parametric assumptions appear restrictive, they contain many important cases. For example, $\alpha = 0$ corresponds to complete independence between all cells and $\alpha = 1$ corresponds to constant treatment effects. For unordered variables, as $\sigma \to 0$, we end up with constant treatment effects, and as $\sigma \to \infty$ we end up with cell-wise independent means, just as we would with stratified IV.
 
 Using a model that fully describes the data generating process also facilitates extrapolation not just of treatment effects, but any parameter of interest. For example, if we believed there to be heteroskedasticity, in principle we could estimate the scale of the residuals as a function that varied along with characteristics. 
 
@@ -107,7 +103,7 @@ But more importantly, in making explicit our assumptions about the world the pol
 
 Perhaps the best argument for the model is that the empirical performance is striking, having a lower mean squared error and higher $R^2$ than 2-stage-least-squares estimation even in cases with few categories. The bias of the method reduces with finer grids without a comparable reduction in variance, generating good representations even when the number of cells exceeds the number of observations.
 
-In addition to the paper, I have made estimation software available at [github.com/be-green/late-to-great/](github.com/be-green/late-to-great/), with efficient implementations of the models coded in Stan, a probabilistic programming language that facilitates maximum likelihood, fully Bayesian Markov Chain Monte Carlo, and Maximum a Posteriori estimation via variational Bayesian methods [@carpenter2017stan]. There are interfaces to Stan in R, Stata, Julia, and Python, so these models are also estimable through those languages.
+In addition to the paper, I have made estimation software available at [github.com/be-green/late-to-great/](github.com/be-green/late-to-great/), with efficient implementations of the models coded in Stan, a probabilistic programming language that facilitates maximum likelihood, fully Bayesian Markov Chain Monte Carlo, and Maximum a Posteriori estimation via variational Bayesian methods [@carpenter2017stan].
 
 # Background
 
@@ -117,17 +113,16 @@ There is a substantial amount of literature in more recent years focused on extr
 
 There are several papers in this vein, which largely use the observable characteristics of the various sub-groups in the analysis: the always takers, never takers, and compliers. Perhaps most closely to this paper, @abadie2003semiparametric argues for using estimators that create an approximation to a full treatment effect function that varies with observable characteristics. @kowalski2016doing proposes extrapolating to new situations or programs by examining the marginal treatment effect, or the treatment effect for the person who is marginally entering treatment given an instrument. 
 
-However, most of these papers are concerned with modeling differences in the population which takes up the treatment from the population overall (extrapolating the local average treatment effect to the average treatment effect). While the model presented in this paper can help address the same concerns as the previous literature, it can also be used to extrapolate effectively from one experimental context to a new, quite distant, population, which might not have the same structure for take-up of the treatment at all.
+However, most of these papers are concerned with adjusting for differences between the population which takes up the treatment from the overall group (extrapolating the local average treatment effect to the average treatment effect). While the model presented in this paper can help address the same concerns as the previous literature, it can also be used to extrapolate effectively from one experimental context to a new, quite distant, population, which might not have the same structure for take-up of the treatment at all.
 
-This is a long-standing problem in the survey literature, especially in political science, where researchers are often interested in using polls from one state to forecast outcomes in a different state or the whole country [@wang2015forecasting], or to do inference on sets of complicated interaction effects for different sub-populations [@ghitza2013deep]. Traditionally, the approach is to take a non-representative polling population, divide those populations into several sub-categories, and re-weight the outcomes to reflect the new population total (this goes back at least as far as [@deming1940least]). 
+The problem of projecting high-dimensional and non-linear interaction effects onto new populations is a long-standing problem in the survey literature, especially in political science, where researchers are often interested in using polls from one state to forecast outcomes in a different state or the whole country [@wang2015forecasting], or to do inference on sets of complicated interaction effects for different sub-populations [@ghitza2013deep]. Traditionally, the approach is to take a non-representative polling population, divide those populations into several sub-categories, and re-weight the outcomes to reflect the new population total (this goes back at least as far as [@deming1940least]). 
 
-However, this approach suffers from the curse of dimensionality: while it is desirable to have a finer grid along the characteristics you are estimating, the number of estimation cells grows geometrically with each additional characteristic you include. @gelman1997poststratification demonstrate the efficacy of multilevel regression modeling in capturing that variation, providing a structure that can both capture complete independence between cells, while also allowing for constant responses across all cells along similar characteristics. 
-
-There is a substantial amount of recent work on this problem, notably @gao2020improving, who incorporate structural information to the modeling of variation of responses along observed characteristics, and @kennedy2019know, who applies a similar approach to an experimental context.
+However, this approach suffers from the curse of dimensionality: while it is desirable to have a finer grid along the characteristics you are estimating, the number of estimation cells grows geometrically with each additional characteristic you include. @gelman1997poststratification demonstrate the efficacy of multilevel regression modeling in capturing that variation, providing a structure that can both capture complete independence between cells, while also allowing for constant responses across all cells along similar characteristics. There is a substantial amount of recent work on this problem, notably @gao2020improving, who incorporate structural information to the modeling of variation of responses along observed characteristics, and @kennedy2019know, who applies a similar approach to an experimental context.
 
 Thus far in the causal inference literature, the approach to measuring conditional average treatment effects (separate treatment effects along some partition of the space of measured variables) has been focused on efficiently partitioning the space to capture the parts of the population that have substantially different treatment effects. With traditional estimators that forgo using any prior information about the structure of the model, this helps to balance between the expected variance of the estimator and how well approximated the treatment effect is by an average. Examples include an approach using a single tree to partition the covariate space [@athey2016recursive], and averages across lots of trees (average of effects across reasonable partitions) [@hill2011bayesian; @wager2018estimation].
 
-In principle, the model proposed could be used to complement any method used to partition the covariate space. However, it is easiest to compare and simulate along an even grid of covariates, because in other cases it requires adjustments to the prior scale. However, the method is widely used in spatial statistics, even in settings with non-Euclidean distance metrics, using finite-element approximation techniques borrowed from the engineering literature [@lindgren2011explicit].
+In principle, the multilevel model proposed in this paper could be used to complement any method used to partition the covariate space. However, it is easiest to compare and simulate along an even grid of covariates, because in other cases it requires adjustments to the prior scale. However, the method is widely used in spatial statistics, even in settings with non-Euclidean distance metrics, using finite-element approximation techniques borrowed from the engineering literature [@lindgren2011explicit].
+
 
 # The approach
 
@@ -146,7 +141,7 @@ For example, suppose we measured a population of 10,000 individuals along a numb
 
 The first case is probably the easiest to follow, with the interaction effect corresponding to the first-order Taylor expansion of the treatment effect function around the average level of the covariates of interest. Depending on the distribution of the covariates and the underlying function, this could be a highly effective strategy for estimating varying treatment effects. If we wanted to include all of the interaction effects (even with only three covariates), we would be running a regression with 10 control variables, a number which grows combinatorically with each additional variable of interest. The subgroups of interest are often poorly identified, with some sub-categories having lots of observations, and some having few. In addition, if there are non-linear effects, this first-order approximation of the effect may be a bad one, especially in parts of the covariate space far away from the average, and small errors in the slope estimate in the well-identified part of the population may create large errors in subpopulations far away from the mean, even if the effects are linear. This problem is especially salient when trying to extrapolate to new populations, since the local approximation measured in the original population may center around a completely different part of the covariate space than the new population.
 
-The second case is more similar to the approach I am proposing, but runs head-long into the curse of dimensionality. The partition estimates a  step-function approximation of the treatment effects, but depending on the variance of the treatment effect within that part of the partition, even a well-identified mean may be a poor approximation of the underlying function. However, we must trade off against the shrinking power of traditional estimators as the sample size grows smaller and smaller in each group.
+The second case is more similar to the approach I am proposing, but runs head-long into the curse of dimensionality. The partition estimates a step-function approximation of the treatment effects, but depending on the variance of the treatment effect within that part of the partition, even a well-identified mean may be a poor approximation of the underlying function. However, we must trade off against the shrinking power of traditional estimators as the sample size grows smaller and smaller in each group.
 
 Once again, taking the three covariates case, let us imagine that $\tau = \beta X^2$, where $X$ is a three-by-N matrix of covariates. Suppose that we observe covariates $X$ each uniformly distributed between -10 and 10, and have $N$ of 1000. It seems fairly common in economist papers to split groups into "high, medium, and low," and so let us imagine we just do this. We, again, are interested in all of the interaction effects. That gives us an average of 37 people in each sub-group! While that may give us enough power to detect a large effect, it becomes clear that adding even one or two more groups ends up with an unidentified model and potentially infinite variance of our estimator.
 
@@ -174,179 +169,176 @@ Clearly this shrinks with $\epsilon$, but on the other hand the variance of the 
 
 Next I will introduce an estimator which is well-identified, even in the case where we have more bins than observations, by incorporating known information about the treatment function. Suppose the treatment function is smooth. Then we have some information about the local behavior of the function; if two bins are adjacent, they are more likely to be close than if they had been farther away. We can encode this information with an intrinsic conditional autoregressive model, which incorporates the estimates around a given cell in the form of a prior distribution. 
 
-Given a grid we can represent it as a series of neighbor relationships. Let each point in the center of a bin be a node on a graph or lattice. The clique is the set of adjacent points on the graph along each dimension. As a simplifying assumption, I am proposing to only include information about immediate neighbors.[^3] In other words for a set of parameters $phi$ in cell $i$ (perhaps the baseline response and treatment effect) with neighboring cells $j$,
+We can represent a lattice as a series of neighbor relationships. Let each point in the center of a bin be a node on a graph or lattice. The clique is the set of adjacent points on the graph along each dimension. As a simplifying assumption, I am proposing to only include information about immediate neighbors.[^3] In other words for a set of parameters $\phi$ in cell $i$ (perhaps the baseline response and treatment effect) with neighboring cells $j$,
 
 $$p(\phi_i | \phi_{j\neq i}, \phi_{-j}) = p(\phi_i | \phi_{j\neq i})$$
 
 [^3]: the effectiveness of this assumption is likely application specific (e.g. to incorporate non-local information, it might be good to include more distant relationships through a Gaussian process prior, see, for example @banerjee2008gaussian). 
 
-This models the process over which parameter values evolve along the covariate lattice as a Markov Random Field, meaning that it only depends on the states immediately proceeding this. More specifically, because of the central limit theorem, I'm going to model this as a Gaussian Markov Random Field with cell-wise variance $\sigma_i = q_i^-1$. Since it is easier to work with precision rather than variance in these models, I will use $Q$ as the precision matrix from now on.
+This models the process over which parameter values evolve along the covariate lattice as a Markov Random Field, meaning that it only depends on the states immediately proceeding this. These models have a substantial literature, dating back to @besag1974spatial, who motivates the approach for areal data as being equivalent to a global structure for the variation across a lattice via the Hammersley-Clifford theorem. Previous applications are most common in spatial models, where areal representations of distance encode neighbor relationships, and image processing, where pixels have a similar structure.
+
+Owing to the central limit theorem, the conditional distribution is modeled as a Gaussian density, with 
+$$p(\phi_i | \phi_{j\neq i}, \phi_{-j}) = N(\alpha \Sigma_{i\sim j} w_{i,j}\phi_j, q_i^{-1})$$
+
+where $q^{-1}$ is the precision of the variance of cell $i$, $w_{i,j}$ represents the distance between $j$ and $i$, $i \sim j$ refers to the members of the clique of $i$'s neighbors, and $\alpha$ is the degree of spatial dependence. Because $\alpha$ is an estimated coefficient, these are often called "exact" CAR models.
+
+A common variant, which allows for non-stationary variation around a central value, is called the Intrinsic Conditional Auto-Regressive Model (ICAR), where $\alpha$ is set to 1. Distance is arbitrary when working with scaled covariates on an evenly spaced lattice, and unobserved for ordinal covariates, so I make the simplifying assumption that the weights matrix is a set of binary indicators representing neighbor relationships. As a consequence of both of these assumptions, the expression becomes
+
+$$p(\phi_i | \phi_{j\neq i}, \phi_{-j}, q_i^{-1}) = N(\dfrac{\Sigma_{i\sim j}\phi_i}{d_{i,i}}, \dfrac{1}{d_{i,i}q_i})$$
+with the certainty about my prior guess on $\phi_i$ growing the more neighbor relationships I have, and the expectation being an average of the neighboring estimates. I chose to model the precision as a white noise process, with $q_i = 1$, which may or may not be appropriate depending on the application. However, when working with scaled outcome variables and not too many buckets, it helps to encode structural information we have about the treatment effects. In this case, it corresponds to the idea that without evidence we should view a movement away from the average of neighboring estimates to be within roughly one standard deviation of the outcome. When using too many buckets (e.g. a nearly continuous approximation) this type of prior may be too weak, and when using unscaled outcomes it may be too strong.
+
+This prior is not, itself, a proper density, as it is invariant to any added constant. As a consequence, I estimate the mean of each parameter separately from the variation around it, and constrain variation around the mean to sum to zero. For details of the code and efficiently implementing this algorithm, refer to @morris2019bayesian.
+
+This prior distribution acts as a way to augment the information available in each cell as the dimension of the aggregate estimate expands beyond what would otherwise be possible. It does so by providing a linear basis function that interpolates across cells with no information. To see this, consider a 1-dimensional example. The prior density of cell $i$ will simply be the average of the estimates of its neighbors, a set of lines drawn between both estimates which is weighted by the associated uncertainty on either side. This interpolation strategy is why this helps to include prior, structural information about the treatment effect being a smooth function.
+
+The other advantage this approach is that it encodes the typical information structures used to model treatment effects as special cases. Should the information we observe push us away from a constant treatment effects assumption and towards infinite variance, we can recover the independent cell-wise model. On the other hand, if the constant treatment effects assumption proves to be correct, we can recover a model which pools the sample together. Since both are special cases, this prior information allows us (in a finite sample) to sit somewhere in the middle between completely un-pooled estimation and completely pooled estimation. The extent to which we share information across cells is driven by the model, which encodes structural ex-ante knowledge about the experiment.
+
+As a consequence of this additional information, we can escape the potential trade-off between representing a high dimensional and non-linear function via a mean function and the infinite variance of the least squares estimator as the number of groups get large. When we are missing a group entirely, we interpolate between the surrounding cells, increasing the corresponding uncertainty about our parameter by $\dfrac{1}{d_i}$.
+
+I put these GMRF priors on both the baseline response and the treatment effect, and weakly informative priors on other parameters in order to regularize the model estimates. For full details of the priors and estimation procedure refer to the appendix.
+
+# Computational Evidence
+
+To demonstrate the efficacy of the model relative to current approaches, I ran several hundred simulations from both linear and non-linear functions ranging from one to five dimensions. The model which uses the Gaussian Markov Random Field (GMRF) prior model on the structure of the covariates has indistinguishable bias and lower variance even in small dimensions and few groups. The advantage of the approach becomes clear as the number of groups and dimensions becomes large: often there are few observations in a group, and the variance of the least squares estimator grows vastly. By contrast, the GMRF model actually _improves_ in terms of mean-squared-error and $R^2$ as the number of groups gets large because it is able to incorporate information across cells being estimated. Importantly for policy, it is also able to interpolate for cells which see no data at all, using the neighboring cells to make predictions about the missing group.
+
+The experiment constructs a random covariance matrix for the covariates, simulates 1,000 draws from that joint normal density, and models the treatment effects as a function of regression coefficients on those covariates. The $\beta$ values in the regression are draw randomly from a normal distribution. The treatment effect above the baseline is modeled as a function of $\beta f(X)$, where $f(X)$ is either linear, squared, or oscillating (sin) in all dimensions. This is to help understand the performance under different sorts of functions with different curvatures and degrees of non-linearity Additional results in the appendix also demonstrate the efficacy of handling a non-linear baseline response (outcomes without treatment) which are a function of the covariates, with comparable performance. These same treatment effects are then modeled with different numbers of split points for constructing the lattice.
+
+Treatment uptake for the theoretical consumers is a function of their privately known true treatment effect. The top 10% of all outcomes are "always-takers" in all cases. Both models recover the LATE via 2-stage-least squares, with random assignment of treatment via a strong instrument. The difference between them is only the prior distribution on the cells in the second stage regression. Both identify the causal effect using first stage predictions and uncertainties from OLS. Both regular OLS and the Bayesian model have the same causal identification conditions, since they are both instrumental variables designs. To simplify this aspect of the simulations, I am using a strong, binary instrument, a binary treatment, and continuous outcomes. These could all be relaxed in principle; the simplicity of the design is meant to allow the performance of the two estimators under the high-dimensional conditions to shine through.
+
+The Bayesian model is fitted in Stan, a probabilistic programming language designed to facilitate inference of custom models [@carpenter2017stan]. Stan is a flexible modeling language which leverages automatic differentiation and an adaptive variant of Hamiltonian Monte Carlo to efficiently sample from posterior distributions [@hoffman2014no].
+
+For the purposes of comparing the two methods, I am using point predictions from OLS vs. the mean of the posterior of the Bayesian model fit. In all cases, I used 1,000 individuals who were drawn into the study.
+
+```{r echo = F, message = F, warning = F, error = F, fig.height = 7, fig.width=9, dpi = 300}
+library(data.table)
+library(magrittr)
+library(ggplot2)
+
+modcomp <- fread("model-comparisons/model-summary-stats.csv")
+modcomp %>% 
+  ggplot(aes(x = ngroups, y = MSE, color = Model)) + geom_point() + 
+  geom_smooth(se = F) + 
+  facet_wrap(~k, scales = 'free_y', ncol = 1, 
+             labeller = function(x) lapply(x, function(x) paste0(x, " Covariate(s)"))) +
+  scale_y_log10(labels = scales::comma) + 
+  ggtitle("Mean Squared Error of Predicted Treatment Effect vs. True Group LATE", 
+          subtitle = "N = 1000, Treatment Effect Varies over Covariates") +
+  xlab("Number of Groups per Covariate") +
+  ylab("Mean Squared Error of Predicted LATE") +
+  theme_minimal()
+```
 
 
+```{r echo = F, message = F, warning = F, error = F, fig.width=9, dpi = 300}
+modcomp %>% 
+  ggplot(aes(x = ngroups, y = R2, color = Model)) + geom_point() + 
+  geom_smooth(se = F) + 
+  facet_wrap(~k, scales = 'free_y', ncol = 1, 
+             labeller = function(x) lapply(x, function(x) paste0(x, " Covariate(s)"))) +
+  scale_y_continuous(labels = scales::percent) + 
+  ggtitle("R2 of Predicted Treatment Effect vs. True Group LATE", 
+          subtitle = "N = 1000, Treatment Effect Varies over Covariates") +
+  xlab("Number of Groups per Covariate") +
+  ylab("R2 of Predicted LATE") +
+  theme_minimal()
+```
 
 
+```{r echo = F, message = F, warning = F, error = F, fig.width=9, dpi = 300}
+modcomp %>% 
+  ggplot(aes(x = ngroups, y = MSE, color = Model)) + geom_point() + 
+  geom_smooth(se = F) + 
+  facet_wrap(~k, scales = 'free_y', ncol = 1, 
+             labeller = function(x) lapply(x, function(x) paste0(x, " Covariate(s)"))) +
+  scale_y_log10(labels = scales::comma) + 
+  ggtitle("Absolute Value of Bias of Predicted Treatment Effect vs. True Group LATE", 
+          subtitle = "N = 1000, Treatment Effect Varies over Covariates") +
+  xlab("Number of Groups per Covariate") +
+  ylab("Absolute Value of Bias of Predicted LATE") +
+  theme_minimal()
+```
+
+What immediately jumps out is how quickly OLS deteriorates in high dimensional settings! This should not be shocking at all, since the number of groups in the case of 5 covariates quickly exceeds the number of observations. Indeed, in many cases traditional OLS cannot even identify a treatment effect.
+
+To better understand the performance of the GMRF model, I plot the mean square error and R2 of the point predictions, omitting the regular two-stage-least-squares, which degenerates too quickly to see.
+
+
+```{r echo = F, message = F, warning = F, error = F, fig.height = 7, fig.width=9, dpi = 300}
+modcomp[Model == "GMRF Prior"] %>% 
+  ggplot(aes(x = ngroups, y = MSE)) + geom_point() + 
+  geom_smooth(se = F) + 
+  facet_wrap(~k, scales = 'free_y', ncol = 1, 
+             labeller = function(x) lapply(x, function(x) paste0(x, " Covariate(s)"))) +
+  scale_y_continuous(labels = scales::comma) + 
+  ggtitle("Mean Squared Error of Predicted Treatment Effect vs. True Group LATE", 
+          subtitle = "N = 1000, Treatment Effect Varies over Covariates") +
+  xlab("Number of Groups per Covariate") +
+  ylab("Mean Squared Error of Predicted LATE") +
+  theme_minimal()
+```
+
+```{r echo = F, message = F, warning = F, error = F, fig.height = 7, fig.width=9, dpi = 300}
+modcomp[Model == "GMRF Prior"] %>% 
+  ggplot(aes(x = ngroups, y = R2, color = fun)) + geom_point() + 
+  geom_smooth(se = F) + 
+  facet_wrap(~k, scales = 'free_y', ncol = 1, 
+             labeller = function(x) lapply(x, function(x) paste0(x, " Covariate(s)"))) +
+  scale_y_continuous(labels = scales::comma) + 
+  ggtitle("R2 of Predicted Treatment Effect vs. True Group LATE for GMRF Model", 
+          subtitle = "N = 1000, Treatment Effect Varies over Covariates") +
+  xlab("Number of Groups per Covariate") +
+  ylab("R2 of Predicted LATE") +
+  theme_minimal() + 
+  labs(color = "")
+```
+
+In all cases the point predictions of the GMRF model actually gain in predictive power relative to the larger sample. This is because of the mechanical error associated with approximating a smooth function via a step-wise mean. As we get more bins, we get a better approximation of the underlying function, and because of our model structure our predictions do not completely degenerate. The largest reductions in the variance of the approximations are from the more curved functions, as we would expect.
+
+Graphs I need to format still :
+
+### 6 Groups, 1 dimension, tau = x^2
+![](model-comparisons/n-1000,ngroups-6,k-1,fun-squared/posterior_interval_vs_raw.png)
+
+### 6 Groups, 1 dimension, tau = x^2, 2sls point predictions
+![](model-comparisons/n-1000,ngroups-6,k-1,fun-squared/2sls_vs_mean.png)
+
+### 6 Groups, 1 dimension, tau = x^2, GMRF point predictions
+![](model-comparisons/n-1000,ngroups-6,k-1,fun-squared/posterior_mean_vs_raw.png)
+
+### 6 Groups, 3 dimension, tau = x^2
+![](model-comparisons/n-1000,ngroups-6,k-3,fun-squared/posterior_interval_vs_raw.png)
+
+### 6 Groups, 3 dimension, tau = x^2, 2sls point predictions
+![](model-comparisons/n-1000,ngroups-6,k-3,fun-squared/2sls_vs_mean.png)
+
+### 6 Groups, 3 dimension, tau = x^2, GMRF point predictions
+![](model-comparisons/n-1000,ngroups-6,k-3,fun-squared/posterior_mean_vs_raw.png)
+
+
+# Empirical Example: OHIE Experiment
+
+- I have the model ready to roll
+- Unfortunately, my computer is not big enough to estimate it (13k observations, 38k parameters...)
+- Gonna borrow some server time when I get a chance
+- Still, kind of amazing that 8 gb of ram is able to fit those models in like _max_ 30 min
 
 # Extrapolating to new populations 
 
 Given our new knowledge of the treatment effect in that cell, we can make project this local average treatment effect onto the new population by taking a weighted average of the cell-wise LATE estimates, where the weights are determined by the new population. In the survey literature this is known as _regression and post-stratification_, a model that is used to address non-representative responses in surveys, and (for instance) combine polls across states and forecast how a new state will respond (given state-level demographic information).
 
+# Optimal Policy
 
-# Extrapolation and Optimal Policy
-
-Once we have estimated this model with the data we have observed or collected, extrapolation is (in principle) a fairly easy step. The posterior distribution is a fully generative data model, and so we can just take draws from the posterior predictive distribution and calculate whatever policy-relevant statistics we want. We can check the quantiles of the treatment in the new population, expected variation, the expected value of the treatment effect, or just plot kernel density estimates, spatial maps--really whatever suits the fancy of the policy office or analyst.
-
-Choosing the optimal policy also enters a very well-known domain. The posterior predictive distribution is a full representation of our expected data generating process as we roll out a new policy, and so the thing that is left for the policy office to do is to create a utility or loss function that represents the benefits and costs of the roll-out conditional on posterior draws, and then to make the choice that maximizes expected utility.
-
-Obviously constructing such a function is quite difficult, but the task of doing so is a tractable problem! To be more formal about it, presume that the analyst, government, or researcher has Von Neugmann-Morgenstern preferences. Presume a choice function $C$ with parameters $\theta$ that induces an outcome $A$ given a treatment effect (or vector of treatment effects $x_i$. Then their preferences over actions can be represented by a utility function 
-$$EU(\theta) = \int p_i u(C(\theta, x_i)) di$$ 
-
-Since we have a posterior distribution for our model, 
-
-# Estimation and Simulation Results
-
-Because the posterior distribution for the model does not have a closed form solution, I rely on discrete approximation via simulation, estimating the full posterior distribution of these models using Hamiltonian Monte Carlo with No-U-Turn-Sampling, with models coded in the _Stan_ programming language.
-
-I consider a case with 1,000 individuals who are set to receive incentive to take up a binary treatment. The impact of treatment is a smooth function of an observable attribute. Some people take up the treatment before the incentive when the treatment effect is high enough for them in particular. As with any LATE model, this can only identify the effect of "compliers" in each cell, that is those people who only take up the treatment _because_ of the instrument (simulated incentives in this case). I demonstrate the full range of posterior paths for models attempting to match a range of functional forms, and then compare posterior means and medians to point estimates from 2 stage least squares estimates, run by strata of the variables. While 2 stage least squares will suffer power issues as the number of buckets in a single dimension increase, this is the favored approach in recent literature. See, for example, @wang2019impact.
-
-I consider a number of smooth functional forms, starting with one dimension and then moving to more. Finally, I randomly sample from the population to construct a non-representative sample, and demonstrate the ability to extrapolate to a new one.
-
-## Learning the treatment effect for a population
-
-### One-dimensional performance
-
-First, consider the case where we a series of people who are randomly distributed along some region of our variable $X$, our functions are relatively smooth, and no buckets are empty[^1]. 
-
-[^1]: For now, I have taken the point predictions of the first stage of the instrument variables design as given, and as a consequence I am not considering the error bars associated with these estimates. This will change in a future draft of the paper, as it is important to have full posterior draws for the joint estimation to properly represent the parameter uncertainty for the various models.
-
-To understand the performance of the model under these conditions, I break the variable $X$ into increasingly small cells, estimating both traditional stratified two-stage-least-squares, and the model with the AR(1) prior, which allows cells to inform each other via the likelihood.
-
-Consider first the model $\tau = X^2\beta$.
-
-```{r echo = F, message = F, warning = F}
-library(data.table)
-library(magrittr)
-library(stringr)
-
-files <- list.files("tbl/posterior-mean-summary/",
-                    full.names = T, pattern = "tau=")
-
-data <- lapply(files, fread)
-names(data) <- str_extract(files, "[a-zA-Z0-9-\\^=]+.txt")
-
-data <- rbindlist(data, idcol = T)
-data[, `Number of Cells` := str_extract(.id, 
-                                        "groups-[0-9]+") %>% 
-       str_replace_all("groups-", "") %>% 
-       as.numeric]
-setorder(data, `Number of Cells`)
-data[,.id := NULL]
-
-knitr::kable(data, digits = 2, caption = "Point-wise summary statistics for posterior means vs. 2sls point estimates")
-
-```
-
-What immediately becomes clear is that the performance of the model where the cells can inform each other _does not deteriorate_ as the number of cells gets large. Even in the case where there are only 2 people per cell, the bias is small, as is the variance. By contrast, the standard deviation of the independent estimate grows, since it is controlled by $\sqrt{N}$. In almost all cases, the mean squared error of the posterior mean is small relative to the traditional independent cell approach, and it actually shrinks as the number of cells grows!
-
-To show an illustrative example, look at the estimates for the case where there are 50 buckets of our $X$ variable.
-
-![](img/posterior-50-buckets.png)
-
-Compare that to the estimates where we use 100 buckets for the $X$ variable.
-
-![](img/posterior-100-buckets.png)
-
-In principle you might be tempted to object that you would never need bins that were so fine, but consider this; with each additional continuous variable, the number of interactions grows geometrically. When I move to the D=2 case, the number of bins, even with just 10 breakpoints, grows to 100, so the local performance in such a situation can be quite practically important.
-
-Now consider the functional form $\tau = \sin{x}$. This one is particularly odd because the population of compliers drops off cyclically over the distribution of X.
+I have stuff on this but I'm shy and not ready to share. If you got this far I really appreciate it.
 
 
-```{r echo = F, message = F, warning = F}
-library(data.table)
-library(magrittr)
-library(stringr)
-
-files <- list.files("tbl/posterior-mean-summary/",
-                    full.names = T, pattern = "tausinx")
-
-data <- lapply(files, fread)
-names(data) <- str_extract(files, "[a-zA-Z0-9-]+.png")
-
-data <- rbindlist(data, idcol = T)
-data[, `Number of Cells` := str_extract(.id, 
-                                        "groups-[0-9]+") %>% 
-       str_replace_all("groups-", "") %>% 
-       as.numeric]
-setorder(data, `Number of Cells`)
-data[,.id := NULL]
-
-knitr::kable(data, digits = 2, caption = "Point-wise summary statistics for posterior means vs. 2sls point estimates")
-
-```
 
 
-In future drafts I'll include other functional forms (possibly in an appendix), but for now suffice to say that the two or three I've tested all have nearly identical results. I primarily look at point estimates in this case largely because there is nothing comparable to a posterior distribution under 2-stage-least-squares. However, one of the benefits of having a fully generative posterior distribution is that I can draw a series of candidate $\tau$ values which depend on the posterior uncertainty in my hyper-parameter $\rho$. While I still don't have the structural uncertainty from the first stage of the estimate baked into the posterior (again, this will certainly change in a future draft), it still helps us see what precisely is going on in the estimates that we are averaging across.
 
-Consider the most recent fit with 100 groups being estimated across $X$.
 
-```{r echo = F, message = F, warning = F, cache = T, fig.cap = "100 random draws from the posterior distribution for the estimated treatment effects vs. real treatment effect"}
-library(ggplot2)
-fit <- readRDS(file = "binary/simulations/tausinx/100-groups-fixed-first-stage.rds")
-te <- rstan::extract(fit, "tau")$tau
 
-tau_by_group <- fread("binary/simulations/tausinx/100-groups-real-tau.csv")%>%
-    .[natural_uptake == 0 & rand_assign == 1] %>%
-    .[,.(value = mean(tau), N = length(tau)),
-      by = c("X_group")] %>% 
-  setnames("X_group", "group") %>% 
-  .[,Draw := 1]
 
-te <- as.data.table(te)
 
-te[, Draw := .I]
 
-te <- te[Draw %in% sample(Draw, 100)]
 
-melt(te, id.vars = "Draw") %>% 
-  .[,group := as.integer(str_extract(variable, "[0-9]+"))] %>% 
-  ggplot(aes(x = group, y = value, group = Draw)) +
-  geom_line(alpha = 0.5, color = "#A31F34") +
-  geom_line(data = tau_by_group, color = "black", size = 1) +
-  theme_minimal() +
-  xlab("X variable bin") +
-  ylab("Treatment Effect")
-
-```
-
-So some parts of this effect seem to be covered better than others by the posterior distribution of $\tau$. One reason for this might be that the prior variance was set too high given how narrow each of these groups was, which meant that the variation away from the central treatment value is not as tightly draw to neighboring observations. right now the prior is set to a unit variance, with $\beta_i \sim Normal(\beta_{i-1}, 1)$, which might be a bit weaker than we want given the number of parameters we are trying to estimate. An important takeaway from that exercise is that when a prior is formulated around a _base_ model, adding more parameters and prior information can actually serve to regularize estimates, not to blow them out of whack! Sometime weaker priors, while they seem like they make fewer assumptions, allow for variation that we really don't believe to be appropriate and thus overfit the data. Because our priors are allowing for the model to check for variations _away_ from a constant treatment effects assumption, our understanding of that base model relative to the variation in our $X$ variables should inform our model.
-
-To give a practical example, suppose I wanted to model healthcare uptake treatment effects in a randomized or psuedo-randomized setting. I believe that uptake, given that I randomly give a person health insurance likely varies with their distance from a provider (say a clinic or hospital). Suppose I have a measurement of this distance. A prior with a unit variance in the AR(1) process might seem appropriate when my bin is a mile; that might be another 20 minutes walk for someone without a car or an extra 40 minute drive for someone living in Los Angeles, and if my healthcare uptake outcomes are scaled to have standard deviation 1, it seems reasonable to think that I should really allow for a typical deviation (e.g. 66% of the prior density) to allow for a full standard deviation change in a treatment effect. But as my bin size gets smaller, say to the level of 2 feet, that variance starts to seem fairly inappropriate. So keep this in mind when setting priors and dealing with continuous variables; as your binsize shrinks, make sure to understand how that changes the strength of the information encoded in your priors. 
-
-### Graduating to multiple dimensions
-
-## Multiple X Variables
-
-TK
-
-## Mixture of Continuous and Unordered Covariates
-
-TK
-
-# Empirical Example: The Oregon Health Insurance Experiment
-
-TK
-
-# Empirical Example: Comparing interventions in the microcredit literature
-
-TK (maybe)
-
-# Discussion
-
-Thus far, we have seen that the structure in these models is promising for dealing with a key problem in causal inference: extrapolating varying treatment effects given a non-representative population. In the limit, traditional methods that do not rely on any model structure can simply not be estimated due to a lack of data, and this issue is made worse exponentially with each additional dimension included in the analysis.
-
-Are these models the best for analyzing causal inference problems? That, I have no answer for, because it is likely to be specific to the model, data, and context of the problem being studied. Rather, I want to advocate for the more _general_ approach presented in the paper. In order to extrapolate varying treatment effects, we need to be willing to propose a structure for the way that they vary. To do this, we can construct a prior distribution that centers around a believable base model, and incorporates information into the structure of the model. Finally, we can integrate across the candidate models made available through this structure with fully Bayesian inference, draw from the posterior predictive distribution, and weight those draws based on the new population, using the information in the model to guide policy rollouts via a utility or loss function. 
-
-At all points it is critical that the analyst checks their model, both by making sure that simulations from the model align with the observed distribution, and by checking for pathologies in the computation, which can help detect a mismatch between the model and the available data.
-
-Put together, these steps represent a principled and complete workflow for dealing with varying treatment effects. So if these constructions do not work with your model, then by all means come up with another! The world is yours to analyze how you wish.
 
 

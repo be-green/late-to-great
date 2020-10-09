@@ -147,7 +147,7 @@ It will always be at least as good to first rank treatments by unit within the s
 
 Welfare is a much trickier question, and it quickly becomes intractable. I borrow from the discrete choice literature in order to make progress, analyzing treatment uptake as a function of observable characteristics of both the treatment and the individual. In order to actually estimate the models (even in order to properly maximize unit-specific treatment effects).
 
-In general, people will have different preferences over outcomes. I will be presuming some form of utility-maximization framework in order to make progress, though this assumption is less warranted in this context. One way to think about this assumption is that, as the policy-maker, our prior belief is that the individuals in the potential treatment group are attempting to maximize their utility. In the case where we have additional information about the group, perhaps this could be weekend.
+In general, people will have different preferences over outcomes. I will be presuming some form of utility-maximization framework in order to make progress, though this assumption is less warranted in this context. One way to think about this assumption is that, as the policy-maker, our prior belief is that the individuals in the potential treatment group are attempting to maximize their utility. In the case where we have additional information about the group, perhaps this could be weakened.
 
 ## The setup
 

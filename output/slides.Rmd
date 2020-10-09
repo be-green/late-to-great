@@ -409,8 +409,6 @@ $E(\beta_i) = E \left(\dfrac{\beta_{i+1} + \beta_{i-1}}{2} \right)$
 - Weights of the distribution correspond to the likelihood at each point on $\beta_{i-1}$ and $\beta_{i+1}$
 
 
-
-
 ---
 ### Comparing Models: 1 Dimensions, 6 Groups, $\tau = \beta * X^2$
 
@@ -421,7 +419,6 @@ $E(\beta_i) = E \left(\dfrac{\beta_{i+1} + \beta_{i-1}}{2} \right)$
 ### Comparing Models: 1 Dimensions, 6 Groups, $\tau = \beta * X^2$
 
 ![](model-comparisons/n-1000,ngroups-6,k-1,fun-squared/2sls_vs_mean.png)
-
 
 ---
 ### Comparing Models: 1 Dimensions, 6 Groups, $\tau = \beta * X^2$
